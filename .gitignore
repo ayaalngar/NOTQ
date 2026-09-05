@@ -1,0 +1,47 @@
+﻿## Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+## Build outputs (.NET)
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+TestResults/
+*.trx
+
+## Python / AI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+*.pt
+*.pth
+*.onnx
+*.bin
+
+## Flutter / Mobile
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.apk
+*.aab
+*.ipa
+
+## OS / Misc
+.DS_Store
+Thumbs.db
+ehthumbs.db
+uploads/

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="NOTQ.API/NOTQ.API.csproj" />
+  <Project Path="NOTQ.Application/NOTQ.Application.csproj" />
+  <Project Path="NOTQ.Domain/NOTQ.Domain.csproj" />
+  <Project Path="NOTQ.Infrastructure/NOTQ.Infrastructure.csproj" />
+  <Project Path="NOTQ.Tests/NOTQ.Tests.csproj" />
+</Solution>
