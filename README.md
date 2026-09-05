@@ -1,186 +1,221 @@
-﻿# NOTQ Backend — Child Speech Screening Platform MVP
+# NOTQ (نُطق) — AI-Powered Child Speech Screening Platform
 
-NOTQ is a speech-pronunciation screening application designed for children. This repository contains the ASP.NET Core Web API backend built with **Clean Architecture**, **.NET 10**, **Entity Framework Core**, and **SQL Server**.
+<p align="center">
+  <strong>منصة ذكية للفحص المبكر وملاحظة نطق الأطفال باللغة العربية</strong><br>
+  <em>An interactive, non-diagnostic speech screening ecosystem bridging Flutter Mobile, .NET 10 Clean Architecture, and AI Speech Inference.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet" alt=".NET 10" />
+  <img src="https://img.shields.io/badge/Flutter-Cross--Platform-02569B?style=flat-square&logo=flutter" alt="Flutter" />
+  <img src="https://img.shields.io/badge/Python-FastAPI%20%2F%20AI-3776AB?style=flat-square&logo=python" alt="Python FastAPI" />
+  <img src="https://img.shields.io/badge/EF%20Core-SQL%20Server-00758F?style=flat-square" alt="SQL Server" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT" />
+</p>
 
 ---
 
-## 🏛️ Architecture Overview
+## 🌟 Overview | نبذة عن المشروع
 
-The backend orchestrates communication between the **Flutter mobile application**, **SQL Server persistence**, and **AI speech inference**:
+**NOTQ (نُطق)** is an innovative digital screening platform designed to assess Arabic speech and pronunciation in children through engaging, child-friendly exercises. By combining automated acoustic analysis with structured clinical screening rules, NOTQ helps parents, educators, and speech therapists identify potential phonological patterns early—fostering timely, supportive guidance.
+
+> [!IMPORTANT]
+> **Medical & Non-Diagnostic Compliance:**  
+> NOTQ is strictly an **early-awareness and screening tool**, not a medical diagnostic device. It highlights pronunciation patterns (e.g., sound substitutions or omissions) and provides observational screening summaries. It does not provide medical diagnoses or replace certified Speech-Language Pathologists (SLPs).
+
+---
+
+## 🏛️ System Architecture | هيكلية النظام
+
+The NOTQ platform operates as a coordinated monorepo ecosystem with clear boundaries between the client, application services, and intelligent inference:
 
 ```text
-Flutter App (Client)
-      ↓ (HTTP / Multipart REST API)
-NOTQ.API (Controllers, Swagger, JWT Auth, Global Exception Middleware)
-      ↓
-NOTQ.Application (DTOs, Commands, Validations, Orchestration)
-      ↓
-NOTQ.Domain (Entities, Enums, Value Objects, Screening Rules)
-      ↑
-NOTQ.Infrastructure (EF Core, SQL Server, Local Audio Storage, BCrypt, Mock/Real AI Service)
-      ↓
-AI Inference Service (FastAPI / Model Server)
+               ┌───────────────────────────────┐
+               │     Flutter Mobile App        │
+               │   (Child & Parent Client)     │
+               └───────────────┬───────────────┘
+                               │  REST API / Multipart Audio
+                               ▼
+               ┌───────────────────────────────┐
+               │    ASP.NET Core Web API       │
+               │   (.NET 10 Clean Architecture)│
+               │                               │
+               │  NOTQ.API      NOTQ.App       │
+               │  NOTQ.Domain   NOTQ.Infra     │
+               └───────┬───────────────┬───────┘
+                       │               │
+       Persist / Query │               │ Inference Request
+                       ▼               ▼
+          ┌────────────────┐     ┌───────────────────────┐
+          │   SQL Server   │     │  AI Inference Service │
+          │   Persistence  │     │  (FastAPI / PyTorch)  │
+          └────────────────┘     └───────────────────────┘
 ```
 
-### Clean Architecture Layers:
-1. **`NOTQ.Domain`**: Pure C# enterprise entities (`User`, `Child`, `PracticeSession`, `PracticeWord`, `AudioAttempt`, `AnalysisResult`, `RefreshToken`), enums, and domain logic. Zero external package dependencies.
-2. **`NOTQ.Application`**: Application contracts, business service interfaces (`IAuthService`, `IChildService`, `ISessionService`, `IAttemptService`, `ISpeechAnalysisService`, etc.), FluentValidation validators, and DTOs.
-3. **`NOTQ.Infrastructure`**: EF Core database context, migrations, seed data, JWT token generation, BCrypt password hashing, local file storage for audio recordings, scoring engine, pattern detection, and both `MockSpeechAnalysisService` and `AiSpeechAnalysisService`.
-4. **`NOTQ.API`**: REST controllers (`/api/v1`), Swagger documentation with Bearer authentication, and global exception handling with structured error envelopes.
-5. **`NOTQ.Tests`**: Unit and integration test suite (xUnit, FluentAssertions, Moq, EF InMemory).
+### Data Flow & Parallel Contract
+1. **Child Practice:** The child listens to and pronounces target Arabic words through gamified cards in the Flutter app.
+2. **Audio Upload:** High-fidelity audio recordings are uploaded to the .NET Web API.
+3. **Speech Analysis:** The backend coordinates with the AI Speech Inference Service (or built-in `MockSpeechAnalysisService` during isolated development) to evaluate accuracy and identify issue types (e.g., Substitution on `/س/`).
+4. **Scoring & Insights:** Results are stored, evaluated by the pattern detection engine, and visualized in the parent/specialist screening dashboard.
 
 ---
 
-## 🚀 Getting Started
+## 📂 Repository Structure | هيكل المستودع
+
+The repository is organized into four primary functional directories:
+
+```text
+NOTQ/
+│
+├── Backend/                 # ASP.NET Core 10 Web API (Clean Architecture)
+│   ├── NOTQ.API/            # API Controllers, Middleware, Auth & Swagger
+│   ├── NOTQ.Application/    # Use Cases, DTOs, Business Logic & Contracts
+│   ├── NOTQ.Domain/         # Core Entities, Enums & Domain Rules
+│   ├── NOTQ.Infrastructure/ # EF Core, Audio Storage, Security & AI Client
+│   ├── NOTQ.Tests/          # Unit & Integration Test Suite (xUnit)
+│   └── NOTQ.slnx            # Solution File
+│
+├── AI/                      # Speech Recognition & Acoustic Analysis Engine
+│   └── (Inference server, audio preprocessing, model checkpoints)
+│
+├── Mobile/                  # Cross-Platform Mobile Client (Flutter)
+│   └── (Child gamified UI, audio recording, parent dashboard)
+│
+├── Documentation/           # Architecture Specs, Schemas, & Meeting Notes
+│   └── (System design, API specs, SRS, wireframes)
+│
+├── .gitignore               # Multi-stack Git ignore rules (.NET, Flutter, Python)
+├── README.md                # Project master documentation
+└── LICENSE                  # MIT License
+```
+
+---
+
+## 🧩 Core Components | مكونات المشروع
+
+### 1. ⚙️ Backend (`Backend/`)
+Built with **.NET 10** following **Clean Architecture** principles:
+- **Authentication & Security:** JWT tokens, refresh token rotation, and BCrypt password hashing.
+- **Child & Parent Management:** Ownership-enforced profiles and session isolation.
+- **Word Catalog:** Curated Arabic practice words categorized by difficulty, syllables, and target consonant sounds.
+- **Scoring & Pattern Detection:** Deterministic rules to flag repeated phonological patterns (e.g., substituting `/س/` with `/ت/`).
+- **Resilience & Testing:** Pluggable AI service interface (`MockSpeechAnalysisService` vs `AiSpeechAnalysisService`) with 100% passing xUnit test coverage.
+
+👉 *See [Backend/README.md](file:///C:/Users/mos18/source/repos/NOTQ/Backend/README.md) for full API endpoint documentation and database migration steps.*
+
+---
+
+### 2. 📱 Mobile Application (`Mobile/`)
+Built with **Flutter** for Android and iOS:
+- **Child Experience:** Colorful, voice-guided interactive cards with playful animations and real-time positive feedback.
+- **Audio Capture:** High-quality local recording with waveform visualization and upload retry mechanisms.
+- **Parent Portal:** Detailed visual progress charts, history tracking, and downloadable screening summaries.
+
+---
+
+### 3. 🧠 AI Inference Service (`AI/`)
+Python-based microservice powered by **FastAPI**:
+- Evaluates children's spoken Arabic utterances against expected target phonemes.
+- Classifies pronunciation outcomes: `Correct`, `Incorrect`, or `Unclear`.
+- Detects error categories: `Substitution` (إبدال), `Omission` (حذف), or `Distortion` (تشويه).
+
+---
+
+### 4. 📄 Documentation (`Documentation/`)
+Central hub for team documentation:
+- Software Requirements Specification (SRS).
+- Database Entity-Relationship Diagrams (ERD).
+- Screening vocabulary and linguistic phoneme distribution sheets.
+- UI/UX wireframes and workflow diagrams.
+
+---
+
+## 🚀 Getting Started | كيفية البدء والتطوير
 
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- SQL Server LocalDB (`MSSQLLocalDB`) or SQL Server
+- [SQL Server](https://www.microsoft.com/sql-server) or LocalDB
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (for mobile)
+- [Python 3.10+](https://www.python.org/) (for AI service)
 
-### 1. Database Setup & Migrations
-The database schema and Arabic practice words are pre-configured with EF Core migrations.
-To apply migrations:
+---
+
+### 1. Setting Up the Backend
 ```bash
+# Navigate to the Backend folder
+cd Backend
+
+# Apply Database Migrations (Seeds initial Arabic words automatically)
 dotnet ef database update --project NOTQ.Infrastructure --startup-project NOTQ.API
-```
-*(Note: In Development mode, the API automatically verifies and applies pending migrations on startup!)*
 
-### 2. Running the API
-```bash
+# Run the API Server
 dotnet run --project NOTQ.API --launch-profile http
 ```
-The server will start listening on:
-- API Base: `http://localhost:5088/api/v1`
-- Swagger UI: `http://localhost:5088/swagger`
+- **API Base URL:** `http://localhost:5088/api/v1`
+- **Swagger Documentation:** `http://localhost:5088/swagger`
 
----
-
-## 🤝 Parallel Team Workflow
-
-The backend is built around strict contracts and abstractions so **Flutter, Backend, and AI teams work without blocking each other**:
-
-```text
-                  SHARED CONTRACT
-                        │
-          ┌─────────────┼─────────────┐
-          │             │             │
-          ▼             ▼             ▼
-       Flutter       Backend          AI
-          │             │             │
-          │             ▼             │
-          │     MockSpeechAnalysis    │
-          │             │             │
-          └─────────────┼─────────────┘
-                        │
-                  Integration
-                        │
-                        ▼
-                AiSpeechAnalysis
-```
-
-### 📱 For Flutter Team:
-1. You can immediately run the backend and interact via Swagger or directly from Flutter.
-2. The default configuration uses `MockSpeechAnalysisService`, which provides realistic pronunciation analysis for Arabic words (e.g. "سمكة", "سيارة", "شمس") with substitution issues and friendly Arabic feedback.
-3. Audio recordings can be uploaded directly via `POST /api/v1/sessions/{sessionId}/attempts` with `multipart/form-data`.
-
-### 🧠 For AI Team:
-1. Train, fine-tune, and expose your Python FastAPI inference server independently.
-2. Your inference server only needs to expose:
-   ```http
-   POST /predict
-   Content-Type: multipart/form-data
-
-   Fields:
-   - audio: WAV audio stream
-   - expectedWord: string (e.g. "سمكة")
-   ```
-   Returning:
-   ```json
-   {
-     "prediction": "Incorrect",
-     "confidence": 0.87,
-     "issueType": "Substitution",
-     "detectedWord": "تمكة"
-   }
-   ```
-3. When ready, switch `AiService:UseMock` in `NOTQ.API/appsettings.json` to `false` and set `BaseUrl` to your service URL (`http://localhost:8000`). No Flutter changes required!
-
----
-
-## 📋 API Contract Summary
-
-### 1. Authentication (`/api/v1/auth`)
-- `POST /api/v1/auth/register` — Register a parent account.
-- `POST /api/v1/auth/login` — Login and receive Access Token & Refresh Token.
-- `POST /api/v1/auth/refresh-token` — Refresh expired access token.
-- `GET /api/v1/auth/me` *(Auth)* — Get current parent profile.
-
-### 2. Children Management (`/api/v1/children`)
-- `POST /api/v1/children` *(Auth)* — Register a child for the authenticated parent.
-- `GET /api/v1/children` *(Auth)* — Retrieve all children for the parent.
-- `GET /api/v1/children/{id}` *(Auth)* — Retrieve specific child details (strictly ownership-verified).
-- `PUT /api/v1/children/{id}` *(Auth)* — Update child details.
-- `DELETE /api/v1/children/{id}` *(Auth)* — Delete child profile.
-
-### 3. Practice Words (`/api/v1/words`)
-- `GET /api/v1/words` — List all practice words (filters: `difficulty`, `targetSound`).
-- `GET /api/v1/words/{id}` — Get single practice word.
-
-### 4. Practice Sessions (`/api/v1/sessions`)
-- `POST /api/v1/sessions` *(Auth)* — Start a new practice session for a child (`{ "childId": "..." }`).
-- `GET /api/v1/sessions/{id}` *(Auth)* — Get session details.
-- `POST /api/v1/sessions/{id}/complete` *(Auth)* — Complete session, calculate score and attempts summary.
-- `GET /api/v1/sessions/child/{childId}` *(Auth)* — Get session history for a child.
-
-### 5. Audio Attempt Upload (`/api/v1/sessions/{sessionId}/attempts`)
-- `POST /api/v1/sessions/{sessionId}/attempts` *(Auth)*
-  - `Content-Type: multipart/form-data`
-  - Form Fields:
-    - `audio`: Audio file (`.wav`, `.m4a`, `.mp3`, etc.)
-    - `wordId`: Integer ID of the practiced word
-  - Sample Response:
-    ```json
-    {
-      "success": true,
-      "data": {
-        "attemptId": "caf853e0-6598-49f0-842e-cac40499edc0",
-        "wordId": 1,
-        "word": "سمكة",
-        "audioUrl": "/uploads/audio/2026/09/2031a92a0fe848bf928294659199d3fb.wav",
-        "prediction": "Incorrect",
-        "confidence": 0.87,
-        "issueType": "Substitution",
-        "detectedWord": "تمكة",
-        "feedback": {
-          "type": "Retry",
-          "message": "حاول تاني!"
-        },
-        "createdAt": "2026-09-03T15:58:51.31Z"
-      }
-    }
-    ```
-
-### 6. Progress & Reports
-- `GET /api/v1/children/{childId}/progress` *(Auth)* — Aggregated statistics, average score, and trend (`Improving`, `Stable`, `Declining`, `InsufficientData`).
-- `GET /api/v1/children/{childId}/report` *(Auth)* — Full child screening report with pattern detection and guidance.
-- `GET /api/v1/sessions/{sessionId}/report` *(Auth)* — Session-specific report.
-
----
-
-## 🛡️ Screening Language Compliance
-
-NOTQ is strictly an **early-awareness and screening tool**, not a medical diagnostic system. All reports, pattern observations, and guidance strictly adhere to non-diagnostic screening language:
-- ✅ *"Repeated pronunciation pattern detected on target sound /س/."*
-- ✅ *"Some pronunciation inconsistencies were observed."*
-- ✅ *"Professional evaluation by a certified speech-language specialist may be recommended."*
-- ❌ **NEVER**: *"The child has a speech disorder"* or *"The child is diagnosed with..."*
-
----
-
-## 🧪 Automated Testing
-
-Execute the automated test suite covering authentication, authorization, scoring, pattern detection, audio attempts, and AI failure resilience:
+To run automated tests:
 ```bash
 dotnet test NOTQ.slnx
 ```
-**Test Results:** 21 passed, 0 failed.
+
+---
+
+### 2. Setting Up the Mobile App
+```bash
+# Navigate to the Mobile folder
+cd Mobile
+
+# Install Flutter dependencies
+flutter pub get
+
+# Run on emulator or connected device
+flutter run
+```
+
+---
+
+### 3. Setting Up the AI Inference Service
+```bash
+# Navigate to the AI folder
+cd AI
+
+# Create and activate virtual environment
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies and start service
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+---
+
+## 🛡️ Screening Language Standards | معايير لغة الفحص
+
+To guarantee ethical alignment and prevent misleading medical implications, all system outputs strictly adhere to non-diagnostic screening language:
+
+| ✅ Compliant Screening Language | ❌ Prohibited Diagnostic Language |
+|:---|:---|
+| *"Repeated sound substitution detected on target sound /س/."* | *"The child has a speech disorder."* |
+| *"Pronunciation inconsistency observed during practice."* | *"Child diagnosed with Dyslalia."* |
+| *"A consultation with a certified speech specialist is recommended."* | *"Prescribed treatment plan..."* |
+
+---
+
+## 🤝 Contribution Guidelines | المساهمة والتطوير
+
+1. Fork or branch from `main`.
+2. Create a feature branch: `git checkout -b feature/amazing-feature`.
+3. Commit your changes following conventional commits: `git commit -m "feat(backend): add child audio report endpoint"`.
+4. Ensure all tests pass: `dotnet test Backend/NOTQ.slnx`.
+5. Open a Pull Request for code review.
+
+---
+
+## 📄 License | الترخيص
+
+This project is licensed under the **MIT License** — see the [LICENSE](file:///C:/Users/mos18/source/repos/NOTQ/LICENSE) file for details.
