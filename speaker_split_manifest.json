@@ -1,0 +1,42 @@
+{
+  "seed": 42,
+  "val_fraction_speakers": 0.15,
+  "val_speakers": {
+    "abjad": [
+      "Gina",
+      "ameraboqasem",
+      "haya",
+      "jad",
+      "jana",
+      "lya alalmian",
+      "mariana",
+      "masa",
+      "maya",
+      "salam",
+      "samar",
+      "silina",
+      "soliman"
+    ],
+    "asmdd": [
+      "15",
+      "18",
+      "19",
+      "23",
+      "28",
+      "39",
+      "40",
+      "48",
+      "53",
+      "56",
+      "7",
+      "71",
+      "77",
+      "78",
+      "92"
+    ],
+    "unknown": [
+      "unknown"
+    ]
+  },
+  "note": "Speaker-level split with word-coverage-aware speaker selection."
+}
