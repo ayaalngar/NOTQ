@@ -30,6 +30,7 @@ ENV/
 *.pth
 *.onnx
 *.bin
+﻿.venv/
 notq_training_pool/
 notq_training_pool_encoded/
 notq_training_pool_encoded_train/
@@ -50,4 +51,5 @@ build/
 Thumbs.db
 ehthumbs.db
 uploads/
+*.log
 *.log

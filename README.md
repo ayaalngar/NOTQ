@@ -1,4 +1,4 @@
-﻿# NOTQ (نُطق) — AI-Powered Child Speech Screening Platform
+# NOTQ (نُطق) — AI-Powered Child Speech Screening Platform
 
 <p align="center">
   <strong>منصة ذكية للفحص المبكر وملاحظة نطق الأطفال باللغة العربية</strong><br>
