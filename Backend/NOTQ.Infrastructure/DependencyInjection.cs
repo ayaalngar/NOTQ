@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,53 +20,25 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. Database Persistence
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=NOTQDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+            ?? "Data Source=notq.db";
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            options.UseSqlite(connectionString, b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        // 2. Options Configuration
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<AudioStorageOptions>(configuration.GetSection(AudioStorageOptions.SectionName));
         services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
 
-        // 3. Security & Authentication
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        // Auth infrastructure unwired for child-root account model:
+        // services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        // services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        // services.AddScoped<IJwtTokenService, JwtTokenService>();
+        // services.AddAuthentication(...).AddJwtBearer(...);
 
-        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-        var key = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
-
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.RequireHttpsMetadata = false;
-            options.SaveToken = true;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = jwtOptions.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtOptions.Audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
-        });
-
-        // 4. Storage Service
         services.AddScoped<IAudioStorageService, LocalAudioStorageService>();
 
-        // 5. AI Speech Analysis Integration (Parallel workflow toggle)
         var aiSection = configuration.GetSection(AiOptions.SectionName);
         var useMock = aiSection.GetValue<bool?>("UseMock") ?? true;
 
@@ -79,11 +51,31 @@ public static class DependencyInjection
             services.AddHttpClient<ISpeechAnalysisService, AiSpeechAnalysisService>();
         }
 
-        // 6. Domain/Infrastructure Scoring & Reports
         services.AddScoped<IScoringService, ScoringService>();
-        services.AddScoped<IPatternDetectionService, PatternDetectionService>();
-        services.AddScoped<IProgressService, ProgressService>();
-        services.AddScoped<IReportService, ReportService>();
+
+        services.Configure<RailwayAnalysisOptions>(configuration.GetSection(RailwayAnalysisOptions.SectionName));
+        services.AddHttpClient(PronunciationAnalysisApiClient.ClientName, (sp, client) =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RailwayAnalysisOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
+        services.AddScoped<PronunciationAnalysisApiClient>();
+        services.AddScoped<IPronunciationAnalysisService, RailwayPronunciationAnalysisService>();
+        services.AddScoped<ISessionScreeningService, RailwaySessionScreeningService>();
+
+        services.Configure<GradioOptions>(configuration.GetSection(GradioOptions.SectionName));
+        services.AddHttpClient(GradioWordVerificationService.ClientName, (sp, client) =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GradioOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+            if (!string.IsNullOrWhiteSpace(options.ApiToken))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.ApiToken);
+            }
+        });
+        services.AddScoped<IWordVerificationService, GradioWordVerificationService>();
 
         return services;
     }

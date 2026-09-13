@@ -1,4 +1,4 @@
-﻿namespace NOTQ.Application.Common.Models;
+namespace NOTQ.Application.Common.Models;
 
 public class ApiResponse<T>
 {
@@ -64,3 +64,21 @@ public class ApiError
     public string Message { get; set; } = string.Empty;
     public IDictionary<string, string[]>? Details { get; set; }
 }
+
+public class ErrorEnvelope
+{
+    public ApiError Error { get; set; } = new();
+
+    public ErrorEnvelope() { }
+
+    public ErrorEnvelope(string code, string message, IDictionary<string, string[]>? details = null)
+    {
+        Error = new ApiError
+        {
+            Code = code,
+            Message = message,
+            Details = details
+        };
+    }
+}
+

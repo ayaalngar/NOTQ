@@ -9,22 +9,18 @@ using NOTQ.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add Application & Infrastructure Services
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// 2. Web & HTTP Context
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-// 3. Controllers & JSON Configuration
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
-// 4. CORS Policy (Enabling parallel Flutter web & mobile development)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -35,12 +31,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 5. OpenAPI / Swagger Documentation
 builder.Services.AddSwaggerDocumentation();
 
 var app = builder.Build();
 
-// 6. Automatic Database Migration & Seeding in Development
 using (var scope = app.Services.CreateScope())
 {
     try
@@ -58,14 +52,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 7. HTTP Request Pipeline
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseCors("AllowAll");
 
 app.UseStaticFiles();
 
-// Swagger enabled in all environments for API contracts testing
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -73,7 +65,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-app.UseAuthentication();
+// app.UseAuthentication(); (Unwired for child-root account model)
 app.UseAuthorization();
 
 app.MapControllers();

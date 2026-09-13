@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NOTQ.Application.DTOs.Analysis;
 using NOTQ.Application.Interfaces;
 using NOTQ.Domain.Enums;
@@ -21,7 +21,6 @@ public class MockSpeechAnalysisService : ISpeechAnalysisService
     {
         _logger.LogInformation("AudioAnalysisStarted: Mock speech analysis for word '{ExpectedWord}'", expectedWord);
 
-        // Simulate short processing latency (50ms)
         await Task.Delay(50, cancellationToken);
 
         var normalized = expectedWord.Trim();
@@ -91,7 +90,6 @@ public class MockSpeechAnalysisService : ISpeechAnalysisService
                 break;
 
             default:
-                // Default fallback: 80% correct simulation
                 result = new SpeechAnalysisResult
                 {
                     Prediction = PronunciationPrediction.Correct,

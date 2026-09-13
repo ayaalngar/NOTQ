@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi;
+using Microsoft.OpenApi;
 
 namespace NOTQ.API.Extensions;
 
@@ -20,25 +20,6 @@ public static class SwaggerExtensions
                 }
             });
 
-            var securityScheme = new OpenApiSecurityScheme
-            {
-                Name = "Authorization",
-                Description = "Enter JWT Bearer token format: Bearer {your token}",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT"
-            };
-
-            options.AddSecurityDefinition("Bearer", securityScheme);
-
-            options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
-                }
-            });
         });
 
         return services;

@@ -1,4 +1,4 @@
-﻿using NOTQ.Domain.Entities;
+using NOTQ.Domain.Entities;
 
 namespace NOTQ.Application.Interfaces;
 
@@ -11,6 +11,6 @@ public interface IPasswordHasher
 public interface IJwtTokenService
 {
     string GenerateAccessToken(User user);
-    RefreshToken GenerateRefreshToken(Guid userId);
+    string GenerateRefreshToken(Guid userId);
     int AccessTokenExpiryMinutes { get; }
 }

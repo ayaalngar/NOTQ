@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NOTQ.Application.Common.Models;
 using NOTQ.Application.DTOs.Auth;
@@ -6,6 +6,7 @@ using NOTQ.Application.Interfaces;
 
 namespace NOTQ.API.Controllers;
 
+[NonController]
 public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;
