@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_10"]
+
+[phases.install]
+cmds = ["dotnet restore Backend/NOTQ.API/NOTQ.API.csproj"]
+
+[phases.build]
+cmds = ["dotnet publish Backend/NOTQ.API/NOTQ.API.csproj -c Release -o out"]
+
+[start]
+cmd = "dotnet ./out/NOTQ.API.dll"

@@ -9,6 +9,13 @@ using NOTQ.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Support Railway / Cloud dynamic PORT
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
