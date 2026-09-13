@@ -30,11 +30,9 @@ public class ScoringService : IScoringService
             return Math.Round(average, 2);
         }
 
-        // Variance calculation
         var variance = scoresList.Average(s => Math.Pow(s - average, 2));
         var stdDev = Math.Sqrt(variance);
 
-        // Lower variance = higher consistency score
         var consistency = Math.Clamp(1.0 - (stdDev * 1.5), 0.0, 1.0);
         return Math.Round(consistency, 2);
     }

@@ -13,6 +13,7 @@ public class GlobalExceptionHandlingMiddleware
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     };
 
@@ -39,54 +40,54 @@ public class GlobalExceptionHandlingMiddleware
         var response = context.Response;
         response.ContentType = "application/json";
 
-        ApiResponse apiResponse;
+        ErrorEnvelope errorEnvelope;
 
         switch (exception)
         {
             case ValidationException validationEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                apiResponse = ApiResponse.Fail("VALIDATION_ERROR", validationEx.Message, validationEx.Errors);
+                errorEnvelope = new ErrorEnvelope("VALIDATION_ERROR", validationEx.Message, validationEx.Errors);
                 _logger.LogWarning("Validation failure: {Message}", validationEx.Message);
                 break;
 
             case UnauthorizedException unauthorizedEx:
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                apiResponse = ApiResponse.Fail("UNAUTHORIZED", unauthorizedEx.Message);
+                errorEnvelope = new ErrorEnvelope("UNAUTHORIZED", unauthorizedEx.Message);
                 _logger.LogWarning("Unauthorized access attempt: {Message}", unauthorizedEx.Message);
                 break;
 
             case ForbiddenException forbiddenEx:
                 response.StatusCode = (int)HttpStatusCode.Forbidden;
-                apiResponse = ApiResponse.Fail("FORBIDDEN", forbiddenEx.Message);
+                errorEnvelope = new ErrorEnvelope("FORBIDDEN", forbiddenEx.Message);
                 _logger.LogWarning("Forbidden access attempt: {Message}", forbiddenEx.Message);
                 break;
 
             case NotFoundException notFoundEx:
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-                apiResponse = ApiResponse.Fail(notFoundEx.Code, notFoundEx.Message);
+                errorEnvelope = new ErrorEnvelope(notFoundEx.Code, notFoundEx.Message);
                 _logger.LogWarning("Resource not found: {Message}", notFoundEx.Message);
                 break;
 
             case ConflictException conflictEx:
                 response.StatusCode = (int)HttpStatusCode.Conflict;
-                apiResponse = ApiResponse.Fail("CONFLICT", conflictEx.Message);
+                errorEnvelope = new ErrorEnvelope("CONFLICT", conflictEx.Message);
                 _logger.LogWarning("Conflict occurred: {Message}", conflictEx.Message);
                 break;
 
             case AiServiceUnavailableException aiEx:
                 response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
-                apiResponse = ApiResponse.Fail("AI_SERVICE_UNAVAILABLE", aiEx.Message);
+                errorEnvelope = new ErrorEnvelope("AI_SERVICE_UNAVAILABLE", aiEx.Message);
                 _logger.LogError(exception, "Speech analysis service failure: {Message}", aiEx.Message);
                 break;
 
             default:
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                apiResponse = ApiResponse.Fail("INTERNAL_SERVER_ERROR", "An unexpected error occurred. Please try again later.");
+                errorEnvelope = new ErrorEnvelope("INTERNAL_SERVER_ERROR", "An unexpected error occurred. Please try again later.");
                 _logger.LogError(exception, "Unhandled exception occurred while processing request to {Path}", context.Request.Path);
                 break;
         }
 
-        var json = JsonSerializer.Serialize(apiResponse, JsonOptions);
+        var json = JsonSerializer.Serialize(errorEnvelope, JsonOptions);
         await response.WriteAsync(json);
     }
 }

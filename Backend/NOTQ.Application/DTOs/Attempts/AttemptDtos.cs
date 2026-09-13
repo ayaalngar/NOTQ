@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using NOTQ.Domain.Enums;
 
 namespace NOTQ.Application.DTOs.Attempts;
@@ -11,7 +11,7 @@ public class SubmitAttemptRequestDto
 
 public class FeedbackDto
 {
-    public string Type { get; set; } = string.Empty; // "Success", "Retry", "Encouragement"
+    public string Type { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
 }
 

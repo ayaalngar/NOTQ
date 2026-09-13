@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using NOTQ.Application.DTOs.Attempts;
 using NOTQ.Application.DTOs.Auth;
 using NOTQ.Application.DTOs.Children;
@@ -80,7 +80,7 @@ public class StartSessionValidator : AbstractValidator<StartSessionDto>
 public class SubmitAttemptValidator : AbstractValidator<SubmitAttemptRequestDto>
 {
     private static readonly string[] AllowedExtensions = { ".wav", ".mp3", ".m4a", ".aac", ".ogg", ".webm" };
-    private const long MaxFileSizeBytes = 15 * 1024 * 1024; // 15MB
+    private const long MaxFileSizeBytes = 15 * 1024 * 1024;
 
     public SubmitAttemptValidator()
     {

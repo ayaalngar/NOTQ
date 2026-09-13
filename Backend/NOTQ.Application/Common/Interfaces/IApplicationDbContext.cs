@@ -1,17 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NOTQ.Domain.Entities;
 
 namespace NOTQ.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
-    DbSet<User> Users { get; }
     DbSet<Child> Children { get; }
-    DbSet<PracticeSession> PracticeSessions { get; }
-    DbSet<PracticeWord> PracticeWords { get; }
-    DbSet<AudioAttempt> AudioAttempts { get; }
-    DbSet<AnalysisResult> AnalysisResults { get; }
-    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<Word> Words { get; }
+    DbSet<Session> Sessions { get; }
+    DbSet<Attempt> Attempts { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

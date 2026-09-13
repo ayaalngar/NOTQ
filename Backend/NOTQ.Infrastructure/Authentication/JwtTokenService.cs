@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -30,7 +30,6 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(ClaimTypes.Name, user.Name),
-            new(ClaimTypes.Role, user.Role.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -49,19 +48,12 @@ public class JwtTokenService : IJwtTokenService
         return tokenHandler.WriteToken(token);
     }
 
-    public RefreshToken GenerateRefreshToken(Guid userId)
+    public string GenerateRefreshToken(Guid userId)
     {
         var randomNumber = new byte[64];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomNumber);
 
-        return new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Token = Convert.ToBase64String(randomNumber),
-            ExpiresAt = DateTime.UtcNow.AddDays(_options.RefreshTokenExpiryDays),
-            CreatedAt = DateTime.UtcNow
-        };
+        return Convert.ToBase64String(randomNumber);
     }
 }

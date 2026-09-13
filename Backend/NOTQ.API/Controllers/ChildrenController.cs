@@ -1,65 +1,31 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NOTQ.Application.Common.Models;
-using NOTQ.Application.DTOs.Children;
+using NOTQ.Application.DTOs.Mobile;
 using NOTQ.Application.Interfaces;
 
 namespace NOTQ.API.Controllers;
 
-[Authorize]
-public class ChildrenController : BaseApiController
+[ApiController]
+[Route("api/v1/children")]
+public class ChildrenController : ControllerBase
 {
-    private readonly IChildService _childService;
+    private readonly IMobileChildService _childService;
+    private readonly ILogger<ChildrenController> _logger;
 
-    public ChildrenController(IChildService childService)
+    public ChildrenController(
+        IMobileChildService childService,
+        ILogger<ChildrenController> logger)
     {
         _childService = childService;
+        _logger = logger;
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<ChildResponseDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateChild([FromBody] CreateChildDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateChild(
+        [FromBody] CreateChildMobileRequestDto request,
+        CancellationToken cancellationToken)
     {
-        var child = await _childService.CreateChildAsync(CurrentUserId, request, cancellationToken);
-        return CreatedAtAction(nameof(GetChildById), new { id = child.Id }, ApiResponse<ChildResponseDto>.Ok(child, "Child created successfully."));
-    }
-
-    [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ChildResponseDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetChildren(CancellationToken cancellationToken)
-    {
-        var children = await _childService.GetChildrenByParentAsync(CurrentUserId, cancellationToken);
-        return Ok(ApiResponse<IEnumerable<ChildResponseDto>>.Ok(children));
-    }
-
-    [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse<ChildResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetChildById(Guid id, CancellationToken cancellationToken)
-    {
-        var child = await _childService.GetChildByIdAsync(CurrentUserId, id, cancellationToken);
-        return Ok(ApiResponse<ChildResponseDto>.Ok(child));
-    }
-
-    [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse<ChildResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> UpdateChild(Guid id, [FromBody] UpdateChildDto request, CancellationToken cancellationToken)
-    {
-        var child = await _childService.UpdateChildAsync(CurrentUserId, id, request, cancellationToken);
-        return Ok(ApiResponse<ChildResponseDto>.Ok(child, "Child updated successfully."));
-    }
-
-    [HttpDelete("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DeleteChild(Guid id, CancellationToken cancellationToken)
-    {
-        await _childService.DeleteChildAsync(CurrentUserId, id, cancellationToken);
-        return Ok(ApiResponse.Ok("Child profile deleted successfully."));
+        _logger.LogInformation("Creating standalone child profile for '{Name}'", request.Name);
+        var response = await _childService.CreateChildAsync(request, cancellationToken);
+        return Created($"/api/v1/children/{response.ChildId}", response);
     }
 }

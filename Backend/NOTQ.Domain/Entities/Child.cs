@@ -1,14 +1,13 @@
-﻿using NOTQ.Domain.Common;
-
 namespace NOTQ.Domain.Entities;
 
-public class Child : BaseEntity<Guid>
+public class Child
 {
-    public Guid ParentId { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
-    public string? Gender { get; set; }
+    public int Age { get; set; }
+    public string AvatarId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public User Parent { get; set; } = null!;
-    public ICollection<PracticeSession> PracticeSessions { get; set; } = new List<PracticeSession>();
+    public ICollection<Session> Sessions { get; set; } = new List<Session>();
 }
+

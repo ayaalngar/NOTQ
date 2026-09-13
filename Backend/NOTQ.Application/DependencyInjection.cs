@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using NOTQ.Application.Interfaces;
 using NOTQ.Application.Services;
@@ -11,11 +11,12 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IChildService, ChildService>();
-        services.AddScoped<ISessionService, SessionService>();
-        services.AddScoped<IAttemptService, AttemptService>();
-        services.AddScoped<IPracticeWordService, PracticeWordService>();
+        // services.AddScoped<IAuthService, AuthService>(); (Unwired for child-root account model)
+        services.AddScoped<IMobileChildService, MobileChildService>();
+        services.AddScoped<IAssessmentService, AssessmentService>();
+        services.AddScoped<IPracticeService, PracticeService>();
+        services.AddScoped<IAttemptProcessingService, AttemptProcessingService>();
+        services.AddScoped<IHomeService, HomeService>();
 
         return services;
     }

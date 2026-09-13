@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using NOTQ.Application.Common.Exceptions;
 using NOTQ.Application.Interfaces;
@@ -52,7 +52,6 @@ public class LocalAudioStorageService : IAudioStorageService
             await audioStream.CopyToAsync(fileStream, cancellationToken);
         }
 
-        // Return relative web URL (with forward slashes)
         var urlPath = "/" + Path.Combine(relativeDir, fileName).Replace('\\', '/');
         return urlPath;
     }
@@ -73,7 +72,6 @@ public class LocalAudioStorageService : IAudioStorageService
         }
         catch
         {
-            // Suppress failure during delete
         }
 
         return Task.FromResult(false);
