@@ -1,0 +1,8 @@
+{
+  "expected_word": "سمكة",
+  "predicted_word": "جيف",
+  "is_correct": false,
+  "needs_retry": true,
+  "errors": [],
+  "reason": "low_model_confidence"
+}

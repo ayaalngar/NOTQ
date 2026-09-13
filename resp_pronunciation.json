@@ -1,0 +1,14 @@
+{
+  "expected_word": "سمكة",
+  "predicted_word": "تمكة",
+  "is_correct": false,
+  "needs_retry": false,
+  "errors": [
+    {
+      "type": "substitution",
+      "expected": "س",
+      "predicted": "ت"
+    }
+  ],
+  "reason": null
+}
