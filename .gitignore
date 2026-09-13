@@ -21,14 +21,19 @@ __pycache__/
 *$py.class
 *.so
 .env
-.venv
-env/
+.venv/
 venv/
 ENV/
+
+## ML model / training artifacts
 *.pt
 *.pth
 *.onnx
 *.bin
+notq_training_pool/
+notq_training_pool_encoded/
+notq_training_pool_encoded_train/
+notq_training_pool_encoded_validation/
 
 ## Flutter / Mobile
 .dart_tool/
@@ -45,3 +50,4 @@ build/
 Thumbs.db
 ehthumbs.db
 uploads/
+*.log
