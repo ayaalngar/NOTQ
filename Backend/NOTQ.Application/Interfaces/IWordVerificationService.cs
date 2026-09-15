@@ -6,6 +6,7 @@ public class WordVerificationResult
     public bool Matched { get; set; }
     public double MatchScore { get; set; }
     public bool IsServiceUnavailable { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public interface IWordVerificationService

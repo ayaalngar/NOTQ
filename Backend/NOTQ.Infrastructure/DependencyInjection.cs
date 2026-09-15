@@ -64,7 +64,14 @@ public static class DependencyInjection
         services.AddScoped<IPronunciationAnalysisService, RailwayPronunciationAnalysisService>();
         services.AddScoped<ISessionScreeningService, RailwaySessionScreeningService>();
 
-        services.Configure<GradioOptions>(configuration.GetSection(GradioOptions.SectionName));
+        services.Configure<GradioOptions>(options =>
+        {
+            configuration.GetSection(GradioOptions.SectionName).Bind(options);
+            if (string.IsNullOrWhiteSpace(options.ApiToken))
+            {
+                options.ApiToken = configuration["HF_TOKEN"] ?? Environment.GetEnvironmentVariable("HF_TOKEN");
+            }
+        });
         services.AddHttpClient(GradioWordVerificationService.ClientName, (sp, client) =>
         {
             var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GradioOptions>>().Value;
