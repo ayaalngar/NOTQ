@@ -144,6 +144,24 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 ImageUrl = "/assets/words/lion.png",
                 CategoryLetter = "س",
                 CreatedAt = seedDate
+            },
+            new Word
+            {
+                Id = 8,
+                WordText = "ثعلب",
+                Type = "Word",
+                ImageUrl = "/assets/words/fox.png",
+                CategoryLetter = "ث",
+                CreatedAt = seedDate
+            },
+            new Word
+            {
+                Id = 9,
+                WordText = "شجرة",
+                Type = "Word",
+                ImageUrl = "/assets/words/tree.png",
+                CategoryLetter = "ش",
+                CreatedAt = seedDate
             }
         );
     }
