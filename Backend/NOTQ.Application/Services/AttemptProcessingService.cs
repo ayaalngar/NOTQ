@@ -135,6 +135,11 @@ public class AttemptProcessingService : IAttemptProcessingService
                 predictedText = verificationResult.TranscribedText;
                 isVerificationMatched = verificationResult.Matched;
                 isVerificationUnavailable = verificationResult.IsServiceUnavailable;
+                if (isVerificationUnavailable && !string.IsNullOrWhiteSpace(verificationResult.ErrorMessage))
+                {
+                    _logger.LogWarning("Verification service reported failure for word '{WordText}': {ErrorMessage}",
+                        word.WordText, verificationResult.ErrorMessage);
+                }
             }
         }
         catch (Exception ex)

@@ -48,59 +48,63 @@ public class GradioWordVerificationService : IWordVerificationService
             uploadContent.Add(fileContent, "files", "attempt.wav");
 
             var uploadResponse = await _httpClient.PostAsync("gradio_api/upload", uploadContent, cancellationToken);
+            var uploadResponseBody = await uploadResponse.Content.ReadAsStringAsync(cancellationToken);
+
             if (!uploadResponse.IsSuccessStatusCode)
             {
-                _logger.LogWarning("GradioTranscription: Upload failed with status {StatusCode}", uploadResponse.StatusCode);
-                return FallbackUnavailable(targetWord);
+                var knownErr = CheckForKnownErrors(uploadResponseBody, (int)uploadResponse.StatusCode);
+                _logger.LogWarning("GradioTranscription: Upload failed with status {StatusCode}: {Body}", uploadResponse.StatusCode, uploadResponseBody);
+                return FailureResult(knownErr ?? $"Upload failed with status {(int)uploadResponse.StatusCode} ({uploadResponse.StatusCode})");
             }
 
-            var uploadResponseBody = await uploadResponse.Content.ReadAsStringAsync(cancellationToken);
             var uploadedPaths = JsonSerializer.Deserialize<List<string>>(uploadResponseBody);
             if (uploadedPaths == null || uploadedPaths.Count == 0)
             {
                 _logger.LogWarning("GradioTranscription: Upload response contained no paths: {Body}", uploadResponseBody);
-                return FallbackUnavailable(targetWord);
+                return FailureResult("Upload response contained no valid paths");
             }
 
             var remoteFilePath = uploadedPaths[0];
-            _logger.LogDebug("GradioTranscription: Audio uploaded to {RemotePath}", remoteFilePath);
+            _logger.LogInformation("GradioTranscription: Upload succeeded. Remote path: {RemotePath}", remoteFilePath);
 
-            // Step 2: Queue transcription request via POST /gradio_api/call/transcribe
+            // Step 2: Queue transcription request via POST /gradio_api/call/v2/transcribe
             var callPayload = new
             {
-                data = new object[]
+                audio_path = new
                 {
-                    new
-                    {
-                        path = remoteFilePath,
-                        meta = new { _type = "gradio.FileData" }
-                    }
+                    path = remoteFilePath,
+                    meta = new { _type = "gradio.FileData" }
                 }
             };
 
             var callJson = JsonSerializer.Serialize(callPayload);
             using var callContent = new StringContent(callJson, Encoding.UTF8, "application/json");
 
-            var callResponse = await _httpClient.PostAsync("gradio_api/call/transcribe", callContent, cancellationToken);
+            var callResponse = await _httpClient.PostAsync("gradio_api/call/v2/transcribe", callContent, cancellationToken);
+            var callResponseBody = await callResponse.Content.ReadAsStringAsync(cancellationToken);
+
             if (!callResponse.IsSuccessStatusCode)
             {
-                _logger.LogWarning("GradioTranscription: Call transcribe failed with status {StatusCode}", callResponse.StatusCode);
-                return FallbackUnavailable(targetWord);
+                var knownErr = CheckForKnownErrors(callResponseBody, (int)callResponse.StatusCode);
+                _logger.LogWarning("GradioTranscription: Call transcribe failed with status {StatusCode}: {Body}", callResponse.StatusCode, callResponseBody);
+                return FailureResult(knownErr ?? $"Call transcribe failed with status {(int)callResponse.StatusCode} ({callResponse.StatusCode})");
             }
 
-            var callResponseBody = await callResponse.Content.ReadAsStringAsync(cancellationToken);
             using var callDoc = JsonDocument.Parse(callResponseBody);
             if (!callDoc.RootElement.TryGetProperty("event_id", out var eventIdElement))
             {
                 _logger.LogWarning("GradioTranscription: No event_id in call response: {Body}", callResponseBody);
-                return FallbackUnavailable(targetWord);
+                return FailureResult("No event_id in transcribe call response");
             }
 
             var eventId = eventIdElement.GetString();
             if (string.IsNullOrEmpty(eventId))
             {
-                return FallbackUnavailable(targetWord);
+                _logger.LogWarning("GradioTranscription: Empty event_id in call response");
+                return FailureResult("Empty event_id in call response");
             }
+
+            _logger.LogInformation("GradioTranscription: Transcription job started. EventId={EventId}", eventId);
 
             // Step 3: Stream SSE results from GET /gradio_api/call/transcribe/{eventId}
             var sseRequest = new HttpRequestMessage(HttpMethod.Get, $"gradio_api/call/transcribe/{eventId}");
@@ -109,14 +113,17 @@ public class GradioWordVerificationService : IWordVerificationService
             using var sseResponse = await _httpClient.SendAsync(sseRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (!sseResponse.IsSuccessStatusCode)
             {
-                _logger.LogWarning("GradioTranscription: SSE stream connection failed with status {StatusCode}", sseResponse.StatusCode);
-                return FallbackUnavailable(targetWord);
+                var sseErrorBody = await sseResponse.Content.ReadAsStringAsync(cancellationToken);
+                var knownErr = CheckForKnownErrors(sseErrorBody, (int)sseResponse.StatusCode);
+                _logger.LogWarning("GradioTranscription: SSE stream connection failed with status {StatusCode}: {Body}", sseResponse.StatusCode, sseErrorBody);
+                return FailureResult(knownErr ?? $"SSE stream connection failed with status {(int)sseResponse.StatusCode} ({sseResponse.StatusCode})");
             }
 
             using var stream = await sseResponse.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream, Encoding.UTF8);
 
             string? transcribedText = null;
+            string? eventErrorMessage = null;
             bool isCompleteEvent = false;
             bool isErrorEvent = false;
 
@@ -137,7 +144,9 @@ public class GradioWordVerificationService : IWordVerificationService
                     var dataPayload = line.Substring(5).Trim();
                     if (isErrorEvent)
                     {
-                        _logger.LogWarning("GradioTranscription: Gradio Space returned an error event: {ErrorPayload}", dataPayload);
+                        var knownErr = CheckForKnownErrors(dataPayload);
+                        eventErrorMessage = knownErr ?? ExtractErrorMessage(dataPayload);
+                        _logger.LogWarning("GradioTranscription: Gradio Space returned an error event: {ErrorMessage}", eventErrorMessage);
                         break;
                     }
                     if (isCompleteEvent)
@@ -152,25 +161,33 @@ public class GradioWordVerificationService : IWordVerificationService
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "GradioTranscription: Failed parsing complete event data payload");
+                            _logger.LogWarning(ex, "GradioTranscription: Failed parsing complete event data payload: {DataPayload}", dataPayload);
                         }
                         break;
                     }
                 }
             }
 
+            if (eventErrorMessage != null)
+            {
+                _logger.LogWarning("GradioTranscription: Transcription failed: {ErrorMessage}", eventErrorMessage);
+                return FailureResult(eventErrorMessage);
+            }
+
             if (transcribedText == null)
             {
-                _logger.LogWarning("GradioTranscription: No completed transcribed text received");
-                return FallbackUnavailable(targetWord);
+                _logger.LogWarning("GradioTranscription: Transcription failed. No completed transcribed text received");
+                return FailureResult("No completed transcribed text received");
             }
 
             transcribedText = transcribedText.Trim();
+            _logger.LogInformation("GradioTranscription: Transcription completed. Transcribed='{Transcribed}'", transcribedText);
+
             var score = CalculateMatchScore(targetWord, transcribedText);
             var isMatched = score >= 0.70;
 
             _logger.LogInformation(
-                "GradioTranscription: Success. Target='{Target}', Transcribed='{Transcribed}', Score={Score:F2}, Matched={Matched}",
+                "GradioTranscription: Verification result. Target='{Target}', Transcribed='{Transcribed}', Score={Score:F2}, Matched={Matched}",
                 targetWord, transcribedText, score, isMatched);
 
             return new WordVerificationResult
@@ -184,18 +201,72 @@ public class GradioWordVerificationService : IWordVerificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "GradioTranscription: Exception during verification for word '{TargetWord}'", targetWord);
-            return FallbackUnavailable(targetWord);
+            return FailureResult($"Exception: {ex.Message}");
         }
     }
 
-    private static WordVerificationResult FallbackUnavailable(string targetWord)
+    private string? CheckForKnownErrors(string? content, int? statusCode = null)
+    {
+        if (string.IsNullOrWhiteSpace(content) && statusCode != 429) return null;
+
+        if (statusCode == 429 || (content != null && (
+            content.Contains("ZeroGPU quota exceeded", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("quota exceeded", StringComparison.OrdinalIgnoreCase))))
+        {
+            _logger.LogWarning("GradioTranscription: ZeroGPU quota exceeded. Authenticate with a Hugging Face token (HF_TOKEN) for more quota.");
+            return "ZeroGPU quota exceeded: Authenticate with a Hugging Face token for more quota";
+        }
+
+        if (content != null && (
+            content.Contains("Parameter `data` is not a valid key-word argument", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("Parameter data is not a valid key-word argument", StringComparison.OrdinalIgnoreCase) ||
+            (content.Contains("Field required", StringComparison.OrdinalIgnoreCase) && content.Contains("data", StringComparison.OrdinalIgnoreCase))))
+        {
+            _logger.LogWarning("GradioTranscription: Invalid Gradio request payload contract.");
+            return "Invalid Gradio request: Parameter data is not a valid key-word argument";
+        }
+
+        return null;
+    }
+
+    private static string ExtractErrorMessage(string dataPayload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(dataPayload);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("error", out var errProp) && errProp.ValueKind == JsonValueKind.String)
+                {
+                    return errProp.GetString() ?? dataPayload;
+                }
+                if (doc.RootElement.TryGetProperty("message", out var msgProp) && msgProp.ValueKind == JsonValueKind.String)
+                {
+                    return msgProp.GetString() ?? dataPayload;
+                }
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.String)
+            {
+                return doc.RootElement.GetString() ?? dataPayload;
+            }
+        }
+        catch
+        {
+            // Not JSON, return raw payload
+        }
+
+        return string.IsNullOrWhiteSpace(dataPayload) ? "Gradio error event received" : dataPayload;
+    }
+
+    private static WordVerificationResult FailureResult(string errorMessage)
     {
         return new WordVerificationResult
         {
             TranscribedText = string.Empty,
             Matched = false,
             MatchScore = 0,
-            IsServiceUnavailable = true
+            IsServiceUnavailable = true,
+            ErrorMessage = errorMessage
         };
     }
 
