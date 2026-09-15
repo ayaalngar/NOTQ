@@ -349,4 +349,23 @@ public class MobileEndpointTests
         await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage("*Child*not found*");
     }
+
+    [Fact]
+    public async Task GetAssessmentWords_ReturnsFiveAssessmentWords_IncludingFoxAndTree()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var service = new AssessmentService(context);
+
+        // Act
+        var words = await service.GetAssessmentWordsAsync(5);
+
+        // Assert
+        words.Should().HaveCount(5);
+        words.Select(w => w.Word).Should().ContainInOrder("كلب", "قرد", "أسد", "ثعلب", "شجرة");
+        words.Select(w => w.Id).Should().ContainInOrder(5, 6, 7, 8, 9);
+        words.First(w => w.Word == "ثعلب").ImageUrl.Should().Be("/assets/words/fox.png");
+        words.First(w => w.Word == "شجرة").ImageUrl.Should().Be("/assets/words/tree.png");
+    }
 }
+
